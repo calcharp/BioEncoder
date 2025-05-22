@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torch
 from pytorch_metric_learning import losses
-from DendroPy import Tree
+from dendropy import Tree
 from itertools import combinations_with_replacement
 import math
 
@@ -44,7 +44,7 @@ class SupConLoss(nn.Module):
             self.tips = list(tip_depths.keys())
             n_tips = len(self.tips)
 
-            self.bm_corr = torch.eye((n_tips, n_tips), dtype=torch.float32)
+            self.bm_corr = torch.eye(n_tips, dtype=torch.float32)
             ### avoiding redundant correlation checking for the symetric correlation matrix
             for i, j in combinations_with_replacement(range(n_tips), 2):
                 if i == j:
@@ -99,7 +99,7 @@ class SupConLoss(nn.Module):
                 if i != j:
                     tip1 = labels[i]
                     tip2 = labels[j]
-                    t12_corr = self.bm_corr[self.tips.index(tip1), self.tips.index(tip2)]
+                    t12_corr = self.bm_corr[tip1, tip2]
                     mask[i, j] = mask[j, i] = t12_corr
         elif labels is not None:
             labels = labels.contiguous().view(-1, 1)
@@ -201,3 +201,5 @@ LOSSES = {
     'SubCenterArcFace': losses.SubCenterArcFaceLoss,
     'ArcFace': losses.ArcFaceLoss,
 }
+
+

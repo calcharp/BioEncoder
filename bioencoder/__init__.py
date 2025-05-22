@@ -1,6 +1,7 @@
 # from .vis import *
 from .core import utils
 # from .scripts import *
+from .core.losses import LOSSES
 
 from .scripts.archive import archive
 from .scripts.configure import configure
