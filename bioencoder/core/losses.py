@@ -1,7 +1,9 @@
 import torch.nn as nn
 import torch
 from pytorch_metric_learning import losses
-
+from DendroPy import Tree
+from itertools import combinations_with_replacement
+import math
 
 class SupConLoss(nn.Module):
     """
@@ -24,11 +26,43 @@ class SupConLoss(nn.Module):
             temperature. Default: `0.07`.
     """
 
-    def __init__(self, temperature=0.07, contrast_mode="all", base_temperature=0.07):
+    def __init__(self, temperature=0.07, contrast_mode="all", base_temperature=0.07, tree_path=None):
         super(SupConLoss, self).__init__()
         self.temperature = temperature
         self.contrast_mode = contrast_mode
         self.base_temperature = base_temperature
+        self.tree_path = tree_path
+
+        if self.tree_path is not None:
+            tree = Tree.get(path=tree_path, schema="newick")
+            tree.is_rooted = True
+            root = tree.seed_node
+            tip_depths = {
+                leaf.taxon.label: leaf.distance_from_root()
+                for leaf in tree.leaf_node_iter()
+            }
+            self.tips = list(tip_depths.keys())
+            n_tips = len(self.tips)
+
+            self.bm_corr = torch.eye((n_tips, n_tips), dtype=torch.float32)
+            ### avoiding redundant correlation checking for the symetric correlation matrix
+            for i, j in combinations_with_replacement(range(n_tips), 2):
+                if i == j:
+                    pass # we've already set the diagonal to 1.0
+                elif self.tips[i] == self.tips[j]:
+                    raise ValueError(f"Duplicate tip labels found in the tree: {tips[i]}")
+                else:
+                    anc = tree.mrca(taxon_labels=[self.tips[i], self.tips[j]])
+                    if anc is None:
+                        raise ValueError(f"Tips {self.tips[i]} and {self.tips[j]} do not share an ancestor in the tree.")
+                    elif anc is root:
+                        self.bm_corr[i, j] = self.bm_corr[j, i] = 0.0 # if the tips don't share an ancestor until the root of the tree, their bm correlation must be 0.0
+                    else:
+                        bm_var = anc.distance_from_root()
+                        t1_bm_var = tip_depths[self.tips[i]]
+                        t2_bm_var = tip_depths[self.tips[j]]
+                        self.bm_corr[i, j] = self.bm_corr[j, i] = bm_var / math.sqrt(t1_bm_var * t2_bm_var)
+
 
     def forward(self, features, labels=None, mask=None):
         """Compute loss for model. If both `labels` and `mask` are None,
@@ -58,6 +92,15 @@ class SupConLoss(nn.Module):
             raise ValueError("Cannot define both `labels` and `mask`")
         elif labels is None and mask is None:
             mask = torch.eye(batch_size, dtype=torch.float32).to(device)
+            ### the phylogenetic correlations are introduced into the mask here
+        elif labels is not None and self.tree_path is not None:
+            mask = torch.eye(batch_size, dtype=torch.float32).to(device)
+            for i, j in combinations_with_replacement(range(batch_size), 2):
+                if i != j:
+                    tip1 = labels[i]
+                    tip2 = labels[j]
+                    t12_corr = self.bm_corr[self.tips.index(tip1), self.tips.index(tip2)]
+                    mask[i, j] = mask[j, i] = t12_corr
         elif labels is not None:
             labels = labels.contiguous().view(-1, 1)
             if labels.shape[0] != batch_size:
@@ -66,6 +109,8 @@ class SupConLoss(nn.Module):
         else:
             mask = mask.float().to(device)
 
+        #### from here
+        # essentially concatenating all the different views into one embedding vector for each member of a batch
         contrast_count = features.shape[1]
         contrast_feature = torch.cat(torch.unbind(features, dim=1), dim=0)
         if self.contrast_mode == "one":
@@ -76,6 +121,7 @@ class SupConLoss(nn.Module):
             anchor_count = contrast_count
         else:
             raise ValueError("Unknown mode: {}".format(self.contrast_mode))
+        
 
         # compute logits
         anchor_dot_contrast = torch.div(

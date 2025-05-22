@@ -30,6 +30,7 @@ criterion:
   name: 'SupCon' # Loss function - see https://github.com/agporto/BioEncoder/blob/main/help/05-options.md#losses
   params:
     temperature: 0.1 # Temperature parameter for contrastive loss
+    tree_path = 
 
 img_size: &size 384  # Image size for training and validation
 
