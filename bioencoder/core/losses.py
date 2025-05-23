@@ -41,7 +41,9 @@ class SupConLoss(nn.Module):
                 leaf.taxon.label: leaf.distance_from_root()
                 for leaf in tree.leaf_node_iter()
             }
-            self.tips = list(tip_depths.keys())
+
+            ### This makes is so that the labels match the actual dataset labels
+            self.tips = sorted(list(tip_depths.keys()))
             n_tips = len(self.tips)
 
             self.bm_corr = torch.eye(n_tips, dtype=torch.float32)
