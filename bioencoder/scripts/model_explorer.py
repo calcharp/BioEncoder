@@ -10,7 +10,9 @@ import torch
 import streamlit as st
 from streamlit_option_menu import option_menu
 
-from bioencoder import config, utils, vis
+from bioencoder.core import utils
+from bioencoder import config
+from bioencoder import vis
 
 #%%
 

@@ -16,7 +16,8 @@ import torch
 from torch.utils.tensorboard import SummaryWriter
 from torch_ema import ExponentialMovingAverage
 
-from bioencoder import config, utils
+from bioencoder.core import utils
+from bioencoder import config
 
 #%% function
 

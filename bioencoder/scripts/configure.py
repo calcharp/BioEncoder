@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-#%% imports
+# imports
 
 import argparse
 import os
 
-from bioencoder import config, utils
+from bioencoder import config
+from bioencoder.core import utils
 
-#%% function
+
 
 def configure(
         root_dir, 

@@ -9,7 +9,8 @@ from collections import OrderedDict
 
 import torch
 
-from bioencoder import config, utils
+from bioencoder.core import utils
+from bioencoder import config
 
 #%% function
 

@@ -9,7 +9,8 @@ import matplotlib.pyplot as plt
 
 from torch_lr_finder import LRFinder
 
-from bioencoder import config, utils
+from bioencoder.core import utils
+from bioencoder import config
 
 #%% function
 
