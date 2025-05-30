@@ -6,7 +6,8 @@
 import argparse
 import os
 
-from bioencoder import config, utils
+from bioencoder import config
+from bioencoder.core import utils
 
 #%% function
 

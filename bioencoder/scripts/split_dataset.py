@@ -8,7 +8,8 @@ import argparse
 import shutil
 import random
 
-from bioencoder import config, utils
+from bioencoder import config
+from bioencoder.core import utils
 
 #%% function
 
